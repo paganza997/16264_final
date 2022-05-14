@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Music Mood Classification</h1>
+    <h2>Humanoids Final Project</h2>
+    <p>This project utilizies the Spotify API and the data 
+        they provide to classify a song and the Keras library in Python for the neural net.
+    </p>
+    <h3>Classification</h3>
+    <p>
+        First, I will describe the classification problem that this project 
+        attempts to give a solution to. Music classification can be very difficult 
+        given the subjective nature of music; every listener to a song can have
+        a different reaction. There are many methods used for classification, but in
+        this project, the moods are divided according to psychologist Rober Thayer'
+        tradtional model of mood. This model divides songs based on a range of energy 
+        and stress to happy and sad.
+    </p>
+    <img src="music_moods.jpeg" alt="moods" width="600" height="350">
+    <p>Generally, faster tempo songs correlates to a high-energy or happy song, 
+        slower tempos implies low energy or sad songs. Loud songs could indicate anger 
+        while quiet/soft songs can indicate sad songs. High pitch can indicate 
+        happiness, while low pitch can indicate sadness, and so on. Through all these
+        categories, we can then attempt to come to more of an objective classification of a song.
+        In this project, I classify into the four main categories seen in the image above; 
+        energetic, happy, calm, and sad.
+    </p>
+
+    <h3>Spotify API and Data Set Used</h3>
+    <p>Spotify provides a plethora of data on all their cataloged songs in which they have 
+        a series of features for each song. Below is a copy-paste of their descriptions of
+        their audio features. <br>
+        <ul>
+            <li>Acousticness: A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.</li>
+            <li>Danceability: describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.</li>
+            <li>Energy: Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.</li>
+            <li>Instrumetalness: Predicts whether a track contains no vocals. "Ooh" and "aah" sounds are treated as instrumental in this context. Rap or spoken word tracks are clearly "vocal". The closer the instrumentalness value is to 1.0, the greater likelihood the track contains no vocal content. Values above 0.5 are intended to represent instrumental tracks, but confidence is higher as the value approaches 1.0.</li>
+            <li>Key: The key the track is in. Integers map to pitches using standard Pitch Class notation. E.g. 0 = C, 1 = C♯/D♭, 2 = D, and so on. If no key was detected, the value is -1.</li>
+            <li>Liveness: Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.</li>
+            <li>Loudness: The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typically range between -60 and 0 db.</li>
+            <li>Speechiness: Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.</li>
+            <li>Tempo: The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.</li>
+            <li>Valence: A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).</li>
+        </ul>
+        Luckily enough, I was able to find someone who created a dataset of 680 songs, each with the above features.<br>
+        Here's a link to Cristo Balvch's dataset: <a href="https://github.com/cristobalvch/Spotify-Machine-Learning/blob/master/data/data_moods.csv">Data Galore</a> <br>
+        You'll also need the Panda library to access his dataset.
+    </p>
+    <p>
+        However, you will need to get Spotify Credentials in order to access the Spotify API needed for this project. It is pretty simple to do, you just need to create a developer account (which is free) and then activate a project to get your credentials. You can follow the link below to learn more about how to do that. <br>
+        <a href="https://developer.spotify.com">Spotify developer</a>
+    </p>
+    <h3>Model Time</h3>
+    <p>Before building the model, you'll first want to normalize all the data to be in the range of [0,1] using the MinMaxScaler function in from the scikit library.
+        This normalized data is then used to create the training and testing data. Below is the code.
+    </p>
+    <pre><code>
+        df = pandas.read_csv('data_moods.csv')
+
+        X = df[df.columns[6:-3]]
+        Y = df['mood']
+
+        X = MinMaxScaler().fit_transform(X)
+        X2 = np.array(df[df.columns[6:-3]])
+        encoder = LabelEncoder()
+        encoder.fit(Y)
+        encoded_y = encoder.transform(Y)
+
+        train_X, test_X, train_Y, test_Y = train_test_split(X, encoded_y, test_size=.2, random_state=15)
+    </code></pre>
+    <h4>Neural Net</h4>
+    <p>
+        For the neural net, you can use just a simple model using the Keras library and still get a fairly accurate model. 
+        It has 8 nodes with the input layer for 10 features (those in the bullet points above) and 4 nodes for the output layer and the Adam optimizer (another viable optimzer you can use is SVD). 
+    </p>
+    <pre><code>
+        def modelo():
+            model = Sequential()
+            model.add(Dense(8,input_dim=10,activation='relu'))
+            model.add(Dense(4,activation='softmax'))
+            model.compile(loss='categorical_crossentropy',optimizer='adam',metrics=['accuracy'])
+            return model
+    </code></pre>
+    <p>
+        You can play with the number of input and output nodes and adding more layers. However, through my experimentation, I found that this simple model was the most accurate.
+    </p>
+    <p>
+        If you want to see the accuracy of your model, you can create an estimation of the model with the KerasClassification function and then use 
+        KFold cross validation to get the accuracy of this estimation, in which 10 splits are used. I also ran it with 400 epochs, which you can change if you'd like (but try to keep up above 250).
+        Using the code below, I get an accuracy of 82% and a standard deviation of 5.12% for the model above.
+    </p>
+    <pre><code>
+        estimator = KerasClassifier(build_fn = modelo, epochs = 400, batch_size = 200)
+
+        k_fold = KFold(n_splits = 10, shuffle = True)
+        res = cross_val_score(estimator, X, encoded_y, cv = k_fold)
+        print("Accuracy of model: %.2f%%, standard deviation: %.2f%%" % (res.mean()*100, res.std()*100))
+    </code></pre>
+    <p>Using this estimation, you can also create a confusion matrix to get a detailed response of what your model is good and bad at classifying.</p>
+    <pre><code>
+        estimator.fit(X_train,Y_train)
+        y_preds = estimator.predict(X_test)
+
+        cm = confusion_matrix(Y_test,y_preds)
+        ax = plt.subplot()
+        seaborn.heatmap(cm,annot=True,ax=ax)
+
+        labels = target['mood']
+        ax.set_xlabel('Predicted labels')
+        ax.set_ylabel('True labels')
+        ax.set_title('Confusion Matrix')
+        ax.xaxis.set_ticklabels(labels)
+        ax.yaxis.set_ticklabels(labels)
+        plt.show()
+    </code></pre>
+    <p>
+        Here is the confusion matrix for the model I used.
+    </p>
+    <img src="confusion_matrix.jpg" alt="moods" width="500" height="350">
+    <p>
+        From this, we can see by looking at the left diagnoal that the model is fairly good at classifying each mood. 
+        However, we see there is some trouble with Happy songs, as seen by the lower score.
+        It also has some possibility of mixing up Energetic and Happy songs and Calm and Sad songs, 
+        as seen by the tiles with a score of 14 and 6, respectively.
+    </p>
+    <p>
+        Then you'll want to create a GUI to make it easier to display and enter songs 
+        (code can be found in the github in the mood_prediction.py file). <br>
+        You'll notice the blank square box in the GUI below:
+    </p>
+    <img src="gui_1.jpg" alt="gui" width="450" height="350">
+    <p>
+        For this, you need the spotify ID for the specific song that you want.<br>
+        To do this, you'll want to click the three dots at the end of a song on Spotify. 
+        Then, hover over share and click "Copy Song Link".
+    </p>
+    <img src="song_ID_1.jpg" alt="song_ID" width="750" height="300">
+    <p>
+        To get the ID, go to anywhere you can paste the link and copy the part after "...track/" and before "?si=..." as seen below:
+    </p>
+    <img src="song_ID_2.jpg" alt="song_ID" width="750" height="50">
+    <p>
+        Copy the song ID and then paste it in the blank box in the GUI and click the button "Classify Song".
+    </p>
+    <img src="gui_2.jpg" alt="gui" width="450" height="350">
+    <p>
+        We see here that according to our model, the song Octopus's Garden by The Beatles is a happy song.<br>
+        And with that, you've got a music mood classfier!
+    </p>
+    <h3>Why is this Useful?</h3>
+    <p>
+        As humanoid robots become more and more advanced, they are also becoming more human-like. 
+        To make a humanoid robot even more human-like, you'll want it to be able to accurately display 
+        emotions when listening to music. While the model above is very rudimentary compared to what 
+        would be needed for a sophisticated humanoid robot, this takes us in the direction of
+        getting a robot that is able to display emotions. A better version of this model would be one 
+        that outputs the real-time mood of a song as it plays (which is what I originally wanted to do,
+        but was much more complicated than I expected). With this output, you could command the muscles in the
+        robot's face to move such that it creates the expected emotion. 
+    </p>
+    <h3>References</h3>
+    <a href="https://sites.tufts.edu/eeseniordesignhandbook/2015/music-mood-classification/">Music Classification</a>
+    <a href="https://github.com/cristobalvch/Spotify-Machine-Learning/blob/master/data/data_moods.csv">Cristo Balvch's dataset</a> <br>
+    <a href="https://developer.spotify.com/documentation/web-api/reference/#/operations/get-track">Getting Spotify track information</a> <br>
+    <a href="    https://developer.spotify.com/documentation/web-api/reference/#/operations/get-audio-features
+    ">Spotify audio features descriptions</a> <br>
+    <a href="https://towardsdatascience.com/predicting-the-music-mood-of-a-song-with-deep-learning-c3ac2b45229e">Music Classifcation of Spotify Songs</a>
+</body>
+</html>
+
